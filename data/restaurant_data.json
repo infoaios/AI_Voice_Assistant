@@ -1,0 +1,382 @@
+{
+  "restaurant": {
+    "name": "Infocall Dine",
+    "address": "MG Road, Mumbai, Maharashtra 400001",
+    "phone": "+91 98765 43210",
+    "email": "orders@infocalldine.com",
+    "hours": {
+      "monday": "11:00 AM - 11:00 PM",
+      "tuesday": "11:00 AM - 11:00 PM",
+      "wednesday": "11:00 AM - 11:00 PM",
+      "thursday": "11:00 AM - 11:00 PM",
+      "friday": "11:00 AM - 11:00 PM",
+      "saturday": "11:00 AM - 11:00 PM",
+      "sunday": "11:00 AM - 11:00 PM"
+    },
+    "cuisine_type": "Indian, North Indian",
+    "delivery_available": true,
+    "minimum_order": 200,
+    "delivery_charge": 40
+  },
+  "menu": [
+    {
+      "id": "cat_001",
+      "name": "Starters",
+      "description": "Delicious appetizers to start your meal",
+      "items": [
+        {
+          "id": "item_001",
+          "name": "Paneer Tikka",
+          "description": "Grilled cottage cheese marinated in aromatic spices",
+          "veg": true,
+          "price": 220,
+          "available": true,
+          "preparation_time": "15-20 mins",
+          "spice_level": "Medium",
+          "variants": [
+            { "name": "Regular", "price": 220 },
+            { "name": "Large", "price": 300 }
+          ],
+          "addons": [
+            { "name": "Extra Cheese", "price": 40 },
+            { "name": "Mint Chutney", "price": 20 }
+          ],
+          "allergens": ["Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_002",
+          "name": "Chicken Lollipop",
+          "description": "Deep fried spicy chicken wings with secret sauce",
+          "veg": false,
+          "price": 260,
+          "available": true,
+          "preparation_time": "20-25 mins",
+          "spice_level": "Hot",
+          "variants": [],
+          "addons": [
+            { "name": "Extra Sauce", "price": 30 }
+          ],
+          "allergens": [],
+          "popular": true
+        },
+        {
+          "id": "item_015",
+          "name": "Spring Roll",
+          "description": "Crispy vegetable spring rolls with sweet chili sauce",
+          "veg": true,
+          "price": 180,
+          "available": true,
+          "preparation_time": "10-15 mins",
+          "spice_level": "Mild",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Soy"],
+          "popular": false
+        }
+      ]
+    },
+    {
+      "id": "cat_002",
+      "name": "Main Course",
+      "description": "Hearty main dishes to satisfy your hunger",
+      "items": [
+        {
+          "id": "item_003",
+          "name": "Butter Chicken",
+          "description": "Creamy tomato gravy with tender tandoori chicken pieces",
+          "veg": false,
+          "price": 350,
+          "available": true,
+          "preparation_time": "25-30 mins",
+          "spice_level": "Mild",
+          "variants": [
+            { "name": "Regular", "price": 350 },
+            { "name": "Boneless", "price": 380 }
+          ],
+          "addons": [
+            { "name": "Extra Gravy", "price": 50 },
+            { "name": "Extra Butter", "price": 20 }
+          ],
+          "allergens": ["Dairy"],
+          "popular": true,
+          "chef_special": true
+        },
+        {
+          "id": "item_004",
+          "name": "Paneer Butter Masala",
+          "description": "Cottage cheese cooked in rich creamy buttery tomato gravy",
+          "veg": true,
+          "price": 320,
+          "available": true,
+          "preparation_time": "20-25 mins",
+          "spice_level": "Mild",
+          "variants": [],
+          "addons": [
+            { "name": "Extra Paneer", "price": 60 }
+          ],
+          "allergens": ["Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_016",
+          "name": "Dal Makhani",
+          "description": "Black lentils slow cooked overnight with butter and cream",
+          "veg": true,
+          "price": 280,
+          "available": true,
+          "preparation_time": "15-20 mins",
+          "spice_level": "Mild",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Dairy"],
+          "popular": true
+        }
+      ]
+    },
+    {
+      "id": "cat_003",
+      "name": "Breads",
+      "description": "Freshly baked Indian breads",
+      "items": [
+        {
+          "id": "item_005",
+          "name": "Butter Naan",
+          "description": "Soft leavened bread brushed with butter",
+          "veg": true,
+          "price": 40,
+          "available": true,
+          "preparation_time": "10-12 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Gluten", "Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_006",
+          "name": "Garlic Naan",
+          "description": "Butter naan topped with fresh garlic and cilantro",
+          "veg": true,
+          "price": 60,
+          "available": true,
+          "preparation_time": "10-12 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Gluten", "Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_007",
+          "name": "Tandoori Roti",
+          "description": "Whole wheat bread baked in tandoor",
+          "veg": true,
+          "price": 20,
+          "available": true,
+          "preparation_time": "8-10 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Gluten"],
+          "popular": false
+        },
+        {
+          "id": "item_017",
+          "name": "Cheese Naan",
+          "description": "Naan stuffed with melted cheese",
+          "veg": true,
+          "price": 80,
+          "available": true,
+          "preparation_time": "12-15 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Gluten", "Dairy"],
+          "popular": false
+        }
+      ]
+    },
+    {
+      "id": "cat_004",
+      "name": "Biryani & Rice",
+      "description": "Aromatic rice dishes",
+      "items": [
+        {
+          "id": "item_008",
+          "name": "Veg Biryani",
+          "description": "Hyderabadi style fragrant basmati rice with mixed vegetables",
+          "veg": true,
+          "price": 240,
+          "available": true,
+          "preparation_time": "30-35 mins",
+          "spice_level": "Medium",
+          "variants": [],
+          "addons": [
+            { "name": "Raita", "price": 40 },
+            { "name": "Extra Boiled Egg", "price": 30 }
+          ],
+          "allergens": [],
+          "popular": true
+        },
+        {
+          "id": "item_009",
+          "name": "Chicken Biryani",
+          "description": "Slow cooked dum biryani with tender juicy chicken pieces",
+          "veg": false,
+          "price": 300,
+          "available": true,
+          "preparation_time": "35-40 mins",
+          "spice_level": "Medium",
+          "variants": [
+            { "name": "Regular", "price": 300 },
+            { "name": "Boneless", "price": 330 }
+          ],
+          "addons": [
+            { "name": "Raita", "price": 40 },
+            { "name": "Extra Chicken", "price": 80 }
+          ],
+          "allergens": [],
+          "popular": true,
+          "chef_special": true
+        },
+        {
+          "id": "item_018",
+          "name": "Jeera Rice",
+          "description": "Basmati rice flavored with cumin seeds",
+          "veg": true,
+          "price": 120,
+          "available": true,
+          "preparation_time": "15-20 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": [],
+          "popular": false
+        }
+      ]
+    },
+    {
+      "id": "cat_005",
+      "name": "Desserts",
+      "description": "Sweet endings to your meal",
+      "items": [
+        {
+          "id": "item_010",
+          "name": "Gulab Jamun",
+          "description": "Deep fried milk dumplings soaked in sugar syrup",
+          "veg": true,
+          "price": 80,
+          "available": true,
+          "preparation_time": "5 mins",
+          "variants": [
+            { "name": "2 Pieces", "price": 80 },
+            { "name": "4 Pieces", "price": 140 }
+          ],
+          "addons": [
+            { "name": "Vanilla Ice Cream", "price": 60 }
+          ],
+          "allergens": ["Dairy", "Gluten"],
+          "popular": true
+        },
+        {
+          "id": "item_011",
+          "name": "Chocolate Ice Cream",
+          "description": "Rich creamy chocolate ice cream",
+          "veg": true,
+          "price": 120,
+          "available": false,
+          "preparation_time": "5 mins",
+          "variants": [],
+          "addons": [
+            { "name": "Chocolate Sauce", "price": 30 },
+            { "name": "Nuts", "price": 40 }
+          ],
+          "allergens": ["Dairy", "Nuts"],
+          "popular": false
+        }
+      ]
+    },
+    {
+      "id": "cat_006",
+      "name": "Beverages",
+      "description": "Refreshing drinks to complement your meal",
+      "items": [
+        {
+          "id": "item_012",
+          "name": "Masala Chai",
+          "description": "Traditional Indian spiced tea",
+          "veg": true,
+          "price": 30,
+          "available": true,
+          "preparation_time": "5-7 mins",
+          "variants": [],
+          "addons": [],
+          "allergens": ["Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_013",
+          "name": "Cold Coffee",
+          "description": "Chilled coffee with milk and ice cream",
+          "veg": true,
+          "price": 150,
+          "available": true,
+          "preparation_time": "5-7 mins",
+          "variants": [
+            { "name": "Regular", "price": 150 },
+            { "name": "Large", "price": 180 }
+          ],
+          "addons": [
+            { "name": "Extra Ice Cream", "price": 40 }
+          ],
+          "allergens": ["Dairy"],
+          "popular": true
+        },
+        {
+          "id": "item_014",
+          "name": "Fresh Lime Soda",
+          "description": "Refreshing lime juice with soda",
+          "veg": true,
+          "price": 80,
+          "available": true,
+          "preparation_time": "5 mins",
+          "variants": [
+            { "name": "Sweet", "price": 80 },
+            { "name": "Salted", "price": 80 },
+            { "name": "Sweet & Salt", "price": 80 }
+          ],
+          "addons": [],
+          "allergens": [],
+          "popular": false
+        }
+      ]
+    }
+  ],
+  "offers": [
+    {
+      "id": "offer_001",
+      "title": "Weekend Special",
+      "description": "Get 20% off on orders above 500 rupees",
+      "discount_percent": 20,
+      "min_order_value": 500,
+      "valid_days": ["Saturday", "Sunday"],
+      "active": true
+    },
+    {
+      "id": "offer_002",
+      "title": "Combo Deal",
+      "description": "Biryani + Raita + Gulab Jamun at special price",
+      "combo_price": 350,
+      "items": ["item_009", "item_010"],
+      "active": true
+    }
+  ],
+  "payment_methods": [
+    "Cash on Delivery",
+    "UPI",
+    "Credit/Debit Card",
+    "Net Banking"
+  ],
+  "tags": {
+    "popular_items": ["item_001", "item_003", "item_009", "item_010"],
+    "chef_special": ["item_003", "item_009"],
+    "quick_bites": ["item_005", "item_006", "item_012"],
+    "family_meal": ["item_009", "item_004", "item_006"]
+  }
+}

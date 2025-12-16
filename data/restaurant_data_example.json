@@ -1,0 +1,21 @@
+{
+  "name": "Example Restaurant",
+  "operating_hours": {
+    "monday": "10:00-22:00",
+    "tuesday": "10:00-22:00",
+    "wednesday": "10:00-22:00",
+    "thursday": "10:00-22:00",
+    "friday": "10:00-23:00",
+    "saturday": "11:00-23:00",
+    "sunday": "11:00-20:00"
+  },
+  "menu": [
+    {
+      "category": "Main Dishes",
+      "items": [
+        {"name": "Butter Chicken", "price": 12.99, "description": "Tender chicken in butter sauce"},
+        {"name": "Naan Bread", "price": 2.50, "description": "Soft flatbread"}
+      ]
+    }
+  ]
+}
