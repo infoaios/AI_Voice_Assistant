@@ -107,8 +107,8 @@ setup(
     # Entry points (console scripts)
     entry_points={
         "console_scripts": [
-            "voice-platform=voice_platform.main:main",
-            "voice-platform-setup-env=voice_platform.scripts.setup_env:main",
+            "voice-platform=main:main",
+            "voice-platform-setup-env=scripts.setup_env:main",
         ],
     },
     

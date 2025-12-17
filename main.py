@@ -9,46 +9,28 @@ import torch
 import sys
 from pathlib import Path
 
-# Add parent directory to path for imports when running from project root
+# Add project root to path for imports
 if __name__ == "__main__":
-    parent_dir = Path(__file__).parent.parent
-    if str(parent_dir) not in sys.path:
-        sys.path.insert(0, str(parent_dir))
+    project_root = Path(__file__).parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
 
-# Use relative imports when possible, fallback to absolute
-try:
-    from services.infrastructure.logger_service import setup_logging, log_conversation
-    from services.infrastructure.vad_service import VADService
-    from services.infrastructure.audio_processor import AudioProcessor
-    from services.business.entity_service import EntityService
-    from services.business.action_service import ActionService
-    from services.business.policy_service import PolicyService
-    from services.receptionist.dialog_manager import DialogManager
-    from services.flows.stt_flow import STTFlow
-    from services.flows.ttt_flow import TTTFlow
-    from services.flows.tts_flow import TTSFlow
-    from repos.json_repo import JSONRepository
-    from repos.entities.order_entity import OrderManager
-    from llms.STT.stt_service import STTService
-    from llms.TTT.ttt_service import TTTService
-    from llms.TTS.tts_service import TTSService
-except ImportError:
-    # Fallback to absolute imports
-    from voice_platform.services.infrastructure.logger_service import setup_logging, log_conversation
-    from voice_platform.services.infrastructure.vad_service import VADService
-    from voice_platform.services.infrastructure.audio_processor import AudioProcessor
-    from voice_platform.services.business.entity_service import EntityService
-    from voice_platform.services.business.action_service import ActionService
-    from voice_platform.services.business.policy_service import PolicyService
-    from voice_platform.services.receptionist.dialog_manager import DialogManager
-    from voice_platform.services.flows.stt_flow import STTFlow
-    from voice_platform.services.flows.ttt_flow import TTTFlow
-    from voice_platform.services.flows.tts_flow import TTSFlow
-    from voice_platform.repos.json_repo import JSONRepository
-    from voice_platform.repos.entities.order_entity import OrderManager
-    from voice_platform.llms.STT.stt_service import STTService
-    from voice_platform.llms.TTT.ttt_service import TTTService
-    from voice_platform.llms.TTS.tts_service import TTSService
+# Import from project root (all modules are in root-level directories)
+from services.infrastructure.logger_service import setup_logging, log_conversation
+from services.infrastructure.vad_service import VADService
+from services.infrastructure.audio_processor import AudioProcessor
+from services.business.entity_service import EntityService
+from services.business.action_service import ActionService
+from services.business.policy_service import PolicyService
+from services.receptionist.dialog_manager import DialogManager
+from services.flows.stt_flow import STTFlow
+from services.flows.ttt_flow import TTTFlow
+from services.flows.tts_flow import TTSFlow
+from repos.json_repo import JSONRepository
+from repos.entities.order_entity import OrderManager
+from llms.STT.stt_service import STTService
+from llms.TTT.ttt_service import TTTService
+from llms.TTS.tts_service import TTSService
 
 warnings.filterwarnings("ignore", category=UserWarning)
 

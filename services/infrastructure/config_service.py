@@ -16,8 +16,23 @@ import torch
 from pathlib import Path
 from typing import Dict, Optional
 
+# Load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    # Load .env from project root
+    project_root = Path(__file__).parent.parent.parent
+    env_path = project_root / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        print(f"[INFO] Loaded configuration from .env file")
+except ImportError:
+    # python-dotenv not installed, continue without .env support
+    pass
+except Exception as e:
+    print(f"[WARN] Could not load .env file: {e}")
+
 # Import static defaults from global_data
-# Note: global_data.py is in the root of voice_platform
+# Note: global_data.py is in the project root
 try:
     from global_data import (
         DEFAULT_SAMPLE_RATE,
@@ -42,54 +57,49 @@ except ImportError:
     )
 
 # ========== RUNTIME DEVICE DETECTION ==========
-# These are determined at runtime based on available hardware
+# These are determined at runtime based on available hardware and .env file
 
-def _check_cuda_fully_available():
-    """Check if CUDA is not just available but also functional (cuDNN present)"""
-    if not torch.cuda.is_available():
-        return False
-    try:
-        # Try a simple CUDA operation to check if cuDNN is available
-        x = torch.randn(1, 1, device="cuda")
-        _ = torch.nn.functional.conv2d(x, torch.randn(1, 1, 1, 1, device="cuda"))
-        return True
-    except Exception:
-        # cuDNN not available or other CUDA issue
-        return False
+# Read device settings from .env file or use defaults
+LLM_DEVICE_ENV = os.getenv("LLM_DEVICE", "cuda").lower()
+TTS_DEVICE_ENV = os.getenv("TTS_DEVICE", "cuda").lower()
+WHISPER_DEVICE_ENV = os.getenv("WHISPER_DEVICE", "cpu").lower()
 
-# Check CUDA availability with cuDNN support
-_cuda_fully_available = _check_cuda_fully_available()
+# Validate device values
+valid_devices = ["cuda", "cpu"]
+if LLM_DEVICE_ENV not in valid_devices:
+    print(f"[WARN] Invalid LLM_DEVICE={LLM_DEVICE_ENV}, defaulting to 'cuda'")
+    LLM_DEVICE_ENV = "cuda"
+if TTS_DEVICE_ENV not in valid_devices:
+    print(f"[WARN] Invalid TTS_DEVICE={TTS_DEVICE_ENV}, defaulting to 'cuda'")
+    TTS_DEVICE_ENV = "cuda"
+if WHISPER_DEVICE_ENV not in valid_devices:
+    print(f"[WARN] Invalid WHISPER_DEVICE={WHISPER_DEVICE_ENV}, defaulting to 'cpu'")
+    WHISPER_DEVICE_ENV = "cpu"
 
-# Device assignments: GPU ONLY - no CPU fallback
-# All models must run on GPU. If GPU/cuDNN is not available, application will fail.
-if not torch.cuda.is_available():
+# Check CUDA availability if any device requires it
+requires_cuda = LLM_DEVICE_ENV == "cuda" or TTS_DEVICE_ENV == "cuda"
+if requires_cuda and not torch.cuda.is_available():
     raise SystemExit(
-        "[ERROR] CUDA is not available. This application requires GPU.\n"
+        "[ERROR] CUDA is not available but required by device configuration.\n"
+        f"LLM_DEVICE={LLM_DEVICE_ENV}, TTS_DEVICE={TTS_DEVICE_ENV}\n"
         "Please ensure:\n"
         "  1. NVIDIA GPU is installed and drivers are up to date\n"
         "  2. CUDA toolkit is installed\n"
         "  3. PyTorch with CUDA support is installed\n"
-        "  4. Restart the application"
+        "  4. Or set LLM_DEVICE=cpu and TTS_DEVICE=cpu in .env file\n"
+        "  5. Restart the application"
     )
 
-if not _cuda_fully_available:
-    raise SystemExit(
-        "[ERROR] CUDA is available but cuDNN libraries are missing or incompatible.\n"
-        "This application requires GPU with cuDNN support.\n\n"
-        "To install cuDNN:\n"
-        "  1. Download cuDNN from: https://developer.nvidia.com/cudnn\n"
-        "  2. Extract and add to PATH, OR install via conda:\n"
-        "     conda install -c conda-forge cudnn\n"
-        "  3. Restart the application\n\n"
-        "Application will not run without GPU + cuDNN."
-    )
+# Device assignments from .env or defaults
+LLM_DEVICE = LLM_DEVICE_ENV
+TTS_DEVICE = TTS_DEVICE_ENV
+WHISPER_DEVICE = WHISPER_DEVICE_ENV
 
-# All devices set to GPU only
-LLM_DEVICE = "cuda"
-TTS_DEVICE = "cuda"
-WHISPER_DEVICE = "cuda"
-
-print("[INFO] GPU mode: All models will run on GPU (no CPU fallback)")
+# Print device configuration
+device_summary = f"LLM: {LLM_DEVICE}, TTS: {TTS_DEVICE}, Whisper: {WHISPER_DEVICE}"
+print(f"[INFO] Device configuration: {device_summary}")
+if LLM_DEVICE == "cuda" or TTS_DEVICE == "cuda":
+    print(f"[INFO] CUDA available: {torch.cuda.is_available()}")
 
 # ========== RUNTIME AUDIO CONFIGURATION ==========
 # These can be changed at runtime or via environment variables
@@ -104,17 +114,16 @@ VOICE_CLONE_WAV = os.getenv("VOICE_CLONE_WAV", "data/saved_voices/refe2.wav")
 # ========== RUNTIME MODEL CONFIGURATION ==========
 # Model names can be overridden via environment variables
 
-# Default model: Use "distil-whisper/distil-large-v3" for GPU (faster, smaller)
-# Will auto-fallback to "large-v3" if distil-whisper is incompatible with faster-whisper
+# Default model: Use "large-v3" 
 # Can be overridden via WHISPER_MODEL environment variable
-# Use WHISPER_DEVICE to match actual device being used
-if WHISPER_DEVICE == "cuda":
-    # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
-    # Will auto-fallback to "large-v3" if incompatible with faster-whisper
-    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "distil-whisper/distil-large-v3")
-else:
-    # For CPU, use smaller model for better performance
-    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium.en")
+# if WHISPER_DEVICE == "cuda":
+#     # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
+#     # Will auto-fallback to "large-v3" if incompatible with faster-whisper
+#     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "distil-whisper/distil-large-v3")
+# else:
+#     # For CPU, use smaller model for better performance
+#     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium.en")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
 LLM_MODEL = os.getenv("LLM_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 XTTS_MODEL = os.getenv("XTTS_MODEL", "tts_models/multilingual/multi-dataset/xtts_v2")
 

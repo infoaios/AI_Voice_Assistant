@@ -33,9 +33,8 @@ def setup_logging(log_dir: Optional[str] = None, log_file: str = "assistant.log"
     """
     if log_dir is None:
         # Default to project root/logs
-        # This file is in voice_platform/services/, so go up to voice_platform/, then to project root
-        voice_platform_dir = Path(__file__).parent.parent  # voice_platform/
-        project_root = voice_platform_dir.parent  # project root
+        # This file is in services/infrastructure/, so project root is 2 levels up
+        project_root = Path(__file__).parent.parent.parent  # project root
         log_path = project_root / "logs"
     else:
         log_path = Path(log_dir)

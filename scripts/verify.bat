@@ -142,7 +142,7 @@ IF !ERRORS! EQU 0 (
     echo Environment is ready to use.
     echo Run application with: scripts\run.bat
 ) ELSE (
-    echo   Verification Complete - !ERRORS! error(s) found
+    echo   Verification Complete - %ERRORS% error(s) found
     echo ============================================================================
     echo.
     echo Please fix the errors above before running the application.

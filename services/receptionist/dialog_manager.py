@@ -221,7 +221,7 @@ class DialogManager:
         # 9. Menu queries
         if any(k in text_low for k in ["menu", "dishes", "items", "food list", "what do you have", "what's available"]):
             # Category-specific handling
-            for cat in self.json_repo.get_menu():
+            for cat in self.menu_repo.get_menu():
                 cat_name = cat["name"].lower()
                 if cat_name in text_low:
                     names = ", ".join(i["name"] for i in cat["items"])

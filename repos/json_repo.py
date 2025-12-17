@@ -9,14 +9,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_project_root() -> Path:
-    """Get project root directory (parent of voice_platform)"""
-    # This file is in voice_platform/repos/
-    # So project root is parent of voice_platform/
+    """Get project root directory"""
+    # This file is in repos/, so project root is parent directory
     current_file = Path(__file__)
-    # Find voice_platform directory, then go up one level
-    # voice_platform/repos/json_repo.py -> voice_platform/repos/ -> voice_platform/ -> project root
-    voice_platform_dir = current_file.parent.parent  # voice_platform/
-    return voice_platform_dir.parent  # project root
+    # repos/json_repo.py -> repos/ -> project root
+    return current_file.parent.parent  # project root
 
 
 class JSONRepository:

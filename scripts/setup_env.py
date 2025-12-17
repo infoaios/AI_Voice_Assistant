@@ -95,10 +95,11 @@ def create_environment(env_type):
     env_file = env_files[env_type]
     env_name = env_names[env_type]
     
-    # Find env directory relative to package root
-    # This script is in voice_platform/scripts/, so go up to voice_platform/, then to env/
-    script_dir = Path(__file__).parent.parent
-    env_dir = script_dir / "env"
+    # Find env directory relative to project root
+    # This script is in scripts/, so project root is parent, then env/ is in project root
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+    env_dir = project_root / "env"
     env_path = env_dir / env_file
     
     if not env_path.exists():
@@ -127,7 +128,7 @@ def create_environment(env_type):
         print(f"\n📝 Next steps:")
         print(f"   1. Activate environment: conda activate {env_name}")
         print(f"   2. Verify installation: python -c \"import torch; print('CUDA:', torch.cuda.is_available())\"")
-        print(f"   3. Run application: python -m voice_platform.main")
+        print(f"   3. Run application: python main.py")
         return True
     else:
         print(f"\n❌ Failed to create environment")

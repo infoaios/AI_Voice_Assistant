@@ -72,7 +72,7 @@ echo [INFO] Starting application...
 echo [INFO] Press Ctrl+C to stop
 echo.
 
-cd /d "%PROJECT_ROOT%\voice_platform"
+cd /d "%PROJECT_ROOT%"
 python main.py
 
 IF ERRORLEVEL 1 (

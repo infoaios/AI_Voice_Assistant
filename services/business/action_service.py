@@ -70,9 +70,8 @@ class ActionService:
             # Save to file
             try:
                 # Save to project root/orders directory
-                # This file is in voice_platform/services/, so go up to voice_platform/, then to project root
-                voice_platform_dir = Path(__file__).parent.parent  # voice_platform/
-                project_root = voice_platform_dir.parent  # project root
+                # This file is in services/business/, so project root is 2 levels up
+                project_root = Path(__file__).parent.parent.parent  # project root
                 orders_dir = project_root / "orders"
                 orders_dir.mkdir(exist_ok=True)
                 with open(orders_dir / "orders_history.json", "a") as f:

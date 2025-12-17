@@ -4,6 +4,18 @@ import time
 import sounddevice as sd
 import soundfile as sf
 from pathlib import Path
+import torch
+
+# Fix for PyTorch 2.6+ weights_only issue with TTS models
+# Monkey-patch torch.load to use weights_only=False for TTS compatibility
+_original_torch_load = torch.load
+def _patched_torch_load(*args, **kwargs):
+    """Patched torch.load that defaults weights_only=False for TTS compatibility"""
+    if 'weights_only' not in kwargs:
+        kwargs['weights_only'] = False
+    return _original_torch_load(*args, **kwargs)
+torch.load = _patched_torch_load
+
 from TTS.api import TTS
 
 from services.infrastructure.config_service import TTS_DEVICE, XTTS_MODEL, VOICE_CLONE_WAV
@@ -15,9 +27,8 @@ class TTSService:
     def __init__(self):
         self.device = TTS_DEVICE
         # Resolve path relative to project root
-        # This file is in voice_platform/llms/TTS/, so go up to voice_platform/, then to project root
-        voice_platform_dir = Path(__file__).parent.parent.parent  # voice_platform/
-        project_root = voice_platform_dir.parent  # project root
+        # This file is in llms/TTS/, so project root is 3 levels up
+        project_root = Path(__file__).parent.parent.parent  # project root
         ref_path = project_root / VOICE_CLONE_WAV
 
         if not ref_path.is_file():
@@ -52,8 +63,8 @@ class TTSService:
                         raise SystemExit(
                             "Transformers version updated. Please restart the application:\n"
                             "  1. Stop this application (Ctrl+C)\n"
-                            "  2. Run: python -m voice_platform.main\n"
-                            "  Or: run.bat"
+                            "  2. Run: python main.py\n"
+                            "  Or: scripts\\run.bat"
                         )
                     except Exception as install_err:
                         print(f"[TTS] ❌ Failed to install compatible version: {install_err}")
@@ -214,8 +225,7 @@ class TTSService:
     def _speak_single(self, text: str) -> float:
         """Generate and play single chunk"""
         # Save TTS output to project root
-        voice_platform_dir = Path(__file__).parent.parent.parent  # voice_platform/
-        project_root = voice_platform_dir.parent  # project root
+        project_root = Path(__file__).parent.parent.parent  # project root
         out_path = project_root / "tts_output.wav"
         tts_start = time.time()
 

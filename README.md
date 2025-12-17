@@ -6,6 +6,13 @@ A professional, modular AI voice assistant platform for restaurants with Speech-
 
 ### Windows (Recommended)
 
+**Unified Setup & Run (One Command):**
+```batch
+# Detects hardware, sets up environment, and runs application
+env\setup_and_run.bat
+```
+
+**Or Step-by-Step:**
 ```batch
 # First time setup (detects hardware automatically)
 scripts\setup.bat
@@ -27,7 +34,7 @@ python env/setup_env.py
 conda activate voice_assistant_gpu3080
 
 # Run application
-python -m voice_platform.main
+python main.py
 ```
 
 
@@ -59,7 +66,7 @@ scripts\run.bat
 
 # Linux/macOS
 conda activate voice_assistant_gpu3080
-python -m voice_platform.main
+python main.py
 ```
 
 ### Environment Management
@@ -85,33 +92,36 @@ pip install -r requirements.txt
 ## 📁 Project Structure
 
 ```
-voice_platform/
-├── api/                    # API layer (FastAPI)
-├── core/                   # Core interfaces & exceptions
-├── llms/                   # LLM services (STT/TTT/TTS)
-│   ├── STT/              # Speech-to-Text (Whisper)
-│   ├── TTT/              # Text-to-Text (TinyLlama)
-│   └── TTS/              # Text-to-Speech (XTTS v2)
-├── repos/                  # Data access layer
-├── services/              # Business logic
-│   ├── infrastructure/   # Config, logging, audio
-│   ├── business/         # Domain logic
-│   ├── flows/            # Flow orchestrators
-│   ├── receptionist/     # Dialog management
-│   └── integrations/     # External APIs
-├── scripts/               # Automation scripts
-│   ├── setup.bat        # Environment setup
-│   ├── run.bat          # Run application
-│   ├── verify.bat       # Verify installation
-│   └── clean.bat        # Cleanup
-├── env/                   # Conda environments
-│   ├── cpu_env.yml      # CPU environment
-│   ├── gpu3050_env.yml  # RTX 3050
-│   ├── gpu3080_env.yml  # RTX 3080 (most common)
-│   └── gpu5080_env.yml  # RTX 5080
-├── docs/                  # Documentation
-├── data/                  # Data files
-└── tests/                 # Test suite
+AI_Voice_Assistant/          # Project root
+├── main.py                  # Main entry point
+├── api/                     # API layer (FastAPI)
+├── core/                    # Core interfaces & exceptions
+├── llms/                    # LLM services (STT/TTT/TTS)
+│   ├── STT/                 # Speech-to-Text (Whisper)
+│   ├── TTT/                 # Text-to-Text (TinyLlama)
+│   └── TTS/                 # Text-to-Speech (XTTS v2)
+├── repos/                   # Data access layer
+├── services/                # Business logic
+│   ├── infrastructure/      # Config, logging, audio
+│   ├── business/            # Domain logic
+│   ├── flows/               # Flow orchestrators
+│   ├── receptionist/        # Dialog management
+│   └── integrations/        # External APIs
+├── scripts/                 # Automation scripts
+│   ├── setup.bat           # Environment setup
+│   ├── run.bat             # Run application
+│   ├── verify.bat          # Verify installation
+│   └── clean.bat           # Cleanup
+├── env/                     # Conda environments
+│   ├── cpu_env.yml         # CPU environment
+│   ├── gpu3050_env.yml     # RTX 3050
+│   ├── gpu3080_env.yml     # RTX 3080 (most common)
+│   └── gpu5080_env.yml     # RTX 5080
+├── docs/                    # Documentation
+├── data/                    # Data files
+│   ├── restaurant_data.json
+│   └── saved_voices/
+└── tests/                   # Test suite
 ```
 
 ## 🎯 Key Features
