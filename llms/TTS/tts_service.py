@@ -1,10 +1,11 @@
-"""Text-to-Speech service using XTTS"""
+"""Text-to-Speech service using XTTS - Optimized for low latency"""
 import re
 import time
 import sounddevice as sd
 import soundfile as sf
 from pathlib import Path
 import torch
+import numpy as np
 
 # Fix for PyTorch 2.6+ weights_only issue with TTS models
 # Monkey-patch torch.load to use weights_only=False for TTS compatibility
@@ -100,23 +101,29 @@ class TTSService:
         
         try:
             print("[TTS] Loading TTS model on GPU...")
-            self.tts = TTS(model_name=XTTS_MODEL, gpu=True)
+            # Load model with GPU optimization
+            self.tts = TTS(model_name=XTTS_MODEL, gpu=True, progress_bar=False)
             
-            # Test GPU functionality with a small generation to catch cuDNN errors early
+            # Ensure model is on GPU and set to eval mode for faster inference
+            if hasattr(self.tts, 'synthesizer') and hasattr(self.tts.synthesizer, 'model'):
+                self.tts.synthesizer.model.eval()
+                # Enable optimizations for inference
+                if hasattr(self.tts.synthesizer.model, 'half'):
+                    try:
+                        self.tts.synthesizer.model = self.tts.synthesizer.model.half()  # FP16 for faster inference
+                        print("[TTS] Using FP16 precision for faster inference")
+                    except Exception:
+                        print("[TTS] FP16 not available, using FP32")
+            
+            # Test GPU functionality with in-memory generation (faster than file I/O)
             try:
                 print("[TTS] Testing GPU functionality...")
-                # Create a temporary test file
-                test_path = project_root / "tts_test_temp.wav"
-                self.tts.tts_to_file(
+                test_wav = self.tts.tts(
                     text="test",
-                    file_path=test_path,
                     speaker_wav=str(ref_path),
                     language="en",
                 )
-                # Clean up test file
-                if test_path.exists():
-                    test_path.unlink()
-                print("[TTS] ✅ GPU test successful")
+                print(f"[TTS] ✅ GPU test successful (generated {len(test_wav) if isinstance(test_wav, (list, np.ndarray)) else 'audio'} samples)")
             except Exception as gpu_test_err:
                 error_str = str(gpu_test_err).lower()
                 is_cudnn_error = (
@@ -183,63 +190,170 @@ class TTSService:
         
         self.clone = str(ref_path)
 
-    def speak(self, text: str) -> float:
-        """Split text by sentence boundaries and length for smooth speech."""
+    def speak(self, text: str, language: str = "en") -> float:
+        """
+        Low-latency TTS with streaming playback.
+        Splits text into smaller chunks and streams them for faster first audio.
+        """
         text = text.strip()
         if not text:
             return 0.0
 
-        # STEP 1 — First split using punctuation
-        raw_sentences = re.split(r'[.!?]', text)
+        # Optimized chunking for low latency - smaller chunks for faster first audio
+        final_chunks = self._chunk_text_optimized(text, max_len=80)  # Reduced from 180 for faster generation
+        
+        if not final_chunks:
+            return 0.0
+
+        # Get sample rate from TTS model
+        sample_rate = self.tts.synthesizer.output_sample_rate
+        
+        # Use streaming playback for lowest latency
+        total_gen = self._speak_streaming(final_chunks, language, sample_rate)
+        
+        return total_gen
+
+    def _chunk_text_optimized(self, text: str, max_len: int = 80) -> list[str]:
+        """
+        Optimized text chunking for low latency.
+        Creates smaller chunks to reduce time-to-first-audio.
+        """
+        # STEP 1 — Split by punctuation first
+        raw_sentences = re.split(r'[.!?।]', text)
         sentences = [s.strip() for s in raw_sentences if s.strip()]
 
-        # STEP 2 — But if no punctuation exists, fall back to splitting by "|"
+        # STEP 2 — Fall back to "|" if no punctuation
         if len(sentences) <= 1 and "|" in text:
             sentences = [x.strip() for x in text.split("|") if x.strip()]
 
-        # STEP 3 — Now enforce max length per sentence (for XTTS safety)
+        # STEP 3 — Split into smaller chunks for faster generation
         final_chunks = []
-        max_len = 180  # safe under XTTS 250 char limit
-
+        
         for s in sentences:
             words = s.split()
             chunk = ""
 
             for w in words:
-                candidate = (chunk + " " + w).strip()
+                candidate = (chunk + " " + w).strip() if chunk else w
                 if len(candidate) > max_len:
-                    final_chunks.append(chunk + ".")
-                    chunk = w
+                    if chunk:
+                        final_chunks.append(chunk + ".")
+                    # If single word is too long, split it
+                    if len(w) > max_len:
+                        for i in range(0, len(w), max_len):
+                            final_chunks.append(w[i:i+max_len] + ".")
+                        chunk = ""
+                    else:
+                        chunk = w
                 else:
                     chunk = candidate
 
             if chunk:
                 final_chunks.append(chunk + ".")
 
-        total_gen = 0.0
-        for chunk in final_chunks:
-            total_gen += self._speak_single(chunk)
+        return final_chunks
 
+    def _speak_streaming(self, chunks: list[str], language: str, sample_rate: int) -> float:
+        """
+        Stream TTS generation and playback for lowest latency.
+        Generates chunks in sequence and plays them immediately.
+        Uses torch.inference_mode() for faster inference.
+        """
+        total_gen = 0.0
+        first_audio_time = None
+        
+        # Use inference mode for faster generation (disables gradient computation)
+        with torch.inference_mode():
+            for i, chunk in enumerate(chunks):
+                tts_start = time.time()
+                
+                try:
+                    # Use in-memory generation (no disk I/O) for lower latency
+                    wav = self.tts.tts(
+                        text=chunk,
+                        speaker_wav=self.clone,
+                        language=language,
+                    )
+                    
+                    # Convert to numpy array if not already
+                    if not isinstance(wav, np.ndarray):
+                        wav = np.array(wav, dtype=np.float32)
+                    else:
+                        wav = wav.astype(np.float32)
+                    
+                    gen_time = time.time() - tts_start
+                    total_gen += gen_time
+                    
+                    # Track time to first audio
+                    if first_audio_time is None:
+                        first_audio_time = gen_time
+                        print(f"[TTS] First audio latency: {first_audio_time:.2f}s")
+                    
+                    # Play immediately (streaming)
+                    sd.play(wav, sample_rate)
+                    
+                    # For last chunk, wait for completion
+                    if i == len(chunks) - 1:
+                        sd.wait()
+                    else:
+                        # For intermediate chunks, start playing and continue generating next
+                        # This allows overlap of generation and playback
+                        # Optionally clear GPU cache periodically for long sequences
+                        if (i + 1) % 5 == 0 and torch.cuda.is_available():
+                            torch.cuda.empty_cache()
+                        
+                except Exception as e:
+                    error_str = str(e).lower()
+                    is_cudnn_error = (
+                        "cudnn" in error_str or 
+                        ("cuda" in error_str and "dll" in error_str) or
+                        "cudnncreate" in error_str or
+                        "cudnn_ops" in error_str or
+                        "invalid handle" in error_str
+                    )
+                    
+                    if is_cudnn_error:
+                        raise SystemExit(
+                            f"[TTS] ERROR: cuDNN error during generation: {e}\n"
+                            "This application requires GPU with cuDNN support.\n\n"
+                            "To fix:\n"
+                            "  1. Install cuDNN: conda install -c conda-forge cudnn\n"
+                            "  2. Or download from: https://developer.nvidia.com/cudnn\n"
+                            "  3. Restart the application\n\n"
+                            "Application will not run without GPU + cuDNN."
+                        ) from e
+                    else:
+                        raise SystemExit(
+                            f"[TTS] ERROR: Failed to generate on GPU: {e}\n"
+                            "This application requires GPU. Please check your GPU setup."
+                        ) from e
+        
+        print(f"[TTS] Total generation time: {total_gen:.2f}s for {len(chunks)} chunks")
         return total_gen
 
-    def _speak_single(self, text: str) -> float:
-        """Generate and play single chunk"""
-        # Save TTS output to project root
-        project_root = Path(__file__).parent.parent.parent  # project root
-        out_path = project_root / "tts_output.wav"
+    def _speak_single(self, text: str, language: str = "en") -> float:
+        """
+        Legacy method for single chunk generation (kept for compatibility).
+        Use speak() for optimized streaming.
+        """
+        sample_rate = self.tts.synthesizer.output_sample_rate
         tts_start = time.time()
 
         try:
-            self.tts.tts_to_file(
+            # Use in-memory generation for lower latency
+            wav = self.tts.tts(
                 text=text,
-                file_path=out_path,
                 speaker_wav=self.clone,
-                language="en",
+                language=language,
             )
+            
+            if not isinstance(wav, np.ndarray):
+                wav = np.array(wav, dtype=np.float32)
+            else:
+                wav = wav.astype(np.float32)
+                
         except Exception as e:
             error_str = str(e).lower()
-            # GPU ONLY - no CPU fallback
-            # Check for various cuDNN error patterns
             is_cudnn_error = (
                 "cudnn" in error_str or 
                 ("cuda" in error_str and "dll" in error_str) or
@@ -267,9 +381,10 @@ class TTSService:
         gen_time = time.time() - tts_start
         print(f"[Timing] TTS: {gen_time:.2f}s")
 
-        audio, sr = sf.read(out_path)
-        sd.play(audio, sr)
+        sd.play(wav, sample_rate)
         sd.wait()
 
         return gen_time
+
+
 
