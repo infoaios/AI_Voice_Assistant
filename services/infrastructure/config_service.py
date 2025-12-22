@@ -133,7 +133,8 @@ if WHISPER_DEVICE == "cuda":
     # GPU: default to "large-v3" for accuracy
     # For ultra-low latency, set WHISPER_MODEL="base.en" or "small.en" in .env
     # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
-    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
+    # WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
+    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
 else:
     # CPU: use smaller model for better performance
     # For ultra-low latency, use "tiny.en" or "base.en"
