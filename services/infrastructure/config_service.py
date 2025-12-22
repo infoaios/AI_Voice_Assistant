@@ -62,17 +62,7 @@ except ImportError:
 # Read device settings from .env file or use defaults
 LLM_DEVICE_ENV = os.getenv("LLM_DEVICE", "cuda").lower()
 TTS_DEVICE_ENV = os.getenv("TTS_DEVICE", "cuda").lower()
-# Prefer CUDA for Whisper when available unless overridden by env var
-# If WHISPER_DEVICE is set in the environment use it; otherwise default
-# to 'cuda' when a CUDA-capable PyTorch is present, else 'cpu'.
-whisper_env = os.getenv("WHISPER_DEVICE")
-if whisper_env:
-    WHISPER_DEVICE_ENV = whisper_env.lower()
-    print(f"[INFO] Whisper device set via environment: {WHISPER_DEVICE_ENV}")
-else:
-    # Auto-detect: prefer CUDA if available, otherwise CPU
-    WHISPER_DEVICE_ENV = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Whisper device auto-selected: {WHISPER_DEVICE_ENV} (CUDA available: {torch.cuda.is_available()})")
+WHISPER_DEVICE_ENV = os.getenv("WHISPER_DEVICE", "cuda").lower()
 
 # Validate device values
 valid_devices = ["cuda", "cpu"]
@@ -86,18 +76,12 @@ if WHISPER_DEVICE_ENV not in valid_devices:
     print(f"[WARN] Invalid WHISPER_DEVICE={WHISPER_DEVICE_ENV}, defaulting to 'cpu'")
     WHISPER_DEVICE_ENV = "cpu"
 
-# If any device requests CUDA but CUDA isn't available, fail early with
-# a helpful message. This now includes WHISPER as well so misconfiguration
-# is detected up front.
-
 # Check CUDA availability if any device requires it
-requires_cuda = (
-    LLM_DEVICE_ENV == "cuda" or TTS_DEVICE_ENV == "cuda" or WHISPER_DEVICE_ENV == "cuda"
-)
+requires_cuda = LLM_DEVICE_ENV == "cuda" or TTS_DEVICE_ENV == "cuda"
 if requires_cuda and not torch.cuda.is_available():
     raise SystemExit(
         "[ERROR] CUDA is not available but required by device configuration.\n"
-        f"LLM_DEVICE={LLM_DEVICE_ENV}, TTS_DEVICE={TTS_DEVICE_ENV}, WHISPER_DEVICE={WHISPER_DEVICE_ENV}\n"
+        f"LLM_DEVICE={LLM_DEVICE_ENV}, TTS_DEVICE={TTS_DEVICE_ENV}\n"
         "Please ensure:\n"
         "  1. NVIDIA GPU is installed and drivers are up to date\n"
         "  2. CUDA toolkit is installed\n"
