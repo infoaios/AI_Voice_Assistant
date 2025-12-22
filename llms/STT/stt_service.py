@@ -1,9 +1,9 @@
 """Speech-to-Text service using Whisper"""
 import time
 import numpy as np
-import torch
 from faster_whisper import WhisperModel
-from typing import Tuple
+from typing import Tuple, Optional
+import torch
 
 from services.infrastructure.config_service import WHISPER_MODEL, WHISPER_DEVICE, WHISPER_COMPUTE_TYPE
 
@@ -158,15 +158,32 @@ class STTService:
                 raise
     
     def transcribe_with_timing(self, audio: np.ndarray) -> Tuple[str, float]:
-        """Transcribe audio with timing"""
+        """
+        Transcribe audio with timing
+        
+        Optimized with:
+        - VAD filtering for faster processing
+        - Generator expression for memory efficiency
+        - Optimized faster-whisper parameters
+        """
         if audio.size == 0:
             return "", 0.0
         
-        st = time.time()
-        segments, _ = self.model.transcribe(audio, beam_size=1, language="en")
-        elapsed = time.time() - st
+        st = time.perf_counter()
+        segments, info = self.model.transcribe(
+            audio,
+            beam_size=1,
+            language="en",
+            vad_filter=True,  # Filter non-speech segments for speed
+            condition_on_previous_text=False,  # Faster without context
+            temperature=0,  # Deterministic decoding
+            no_speech_threshold=0.6,  # Detect empty audio faster
+            compression_ratio_threshold=2.4  # Filter low-quality transcriptions
+        )
         
-        text = "".join([s.text for s in segments]).strip()
-        print(f"[Timing] STT: {elapsed:.2f}s")
+        # Use generator expression directly in join for memory efficiency
+        # Consume generator while timing is running
+        text = "".join(s.text for s in segments).strip()
+        
+        elapsed = time.perf_counter() - st
         return text, elapsed
-

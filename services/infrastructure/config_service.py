@@ -120,14 +120,24 @@ VOICE_CLONE_WAV = os.getenv("VOICE_CLONE_WAV", "data/saved_voices/refe2.wav")
 
 # Default model: Use "large-v3" 
 # Can be overridden via WHISPER_MODEL environment variable
-# if WHISPER_DEVICE == "cuda":
-#     # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
-#     # Will auto-fallback to "large-v3" if incompatible with faster-whisper
-#     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "distil-whisper/distil-large-v3")
-# else:
-#     # For CPU, use smaller model for better performance
-#     WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium.en")
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
+# 
+# For ULTRA-LOW LATENCY, use smaller models:
+# - "tiny" or "tiny.en" - Fastest (~50-100ms), lower accuracy
+# - "base" or "base.en" - Fast (~100-200ms), good balance
+# - "small" or "small.en" - Moderate (~200-400ms), better accuracy
+# - "medium" or "medium.en" - Slower (~400-800ms), high accuracy
+# - "large-v3" - Slowest (~800-2000ms), highest accuracy
+#
+# Recommended for ultra-low latency: "base.en" or "small.en"
+if WHISPER_DEVICE == "cuda":
+    # GPU: default to "large-v3" for accuracy
+    # For ultra-low latency, set WHISPER_MODEL="base.en" or "small.en" in .env
+    # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
+    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
+else:
+    # CPU: use smaller model for better performance
+    # For ultra-low latency, use "tiny.en" or "base.en"
+    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium.en")
 LLM_MODEL = os.getenv("LLM_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 XTTS_MODEL = os.getenv("XTTS_MODEL", "tts_models/multilingual/multi-dataset/xtts_v2")
 
