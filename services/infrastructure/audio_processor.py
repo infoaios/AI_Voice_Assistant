@@ -52,18 +52,31 @@ class AudioProcessor:
         threshold: float = VAD_THRESHOLD, 
         max_silence: float = MAX_SILENCE
     ) -> np.ndarray:
-        """Record until silence detected"""
+        """
+        Record audio until silence detected (optimized for low latency)
+        
+        Uses optimized buffer size (1024 samples) for better performance
+        while maintaining low latency detection.
+        """
         print("[Audio] 🎤 Listening...")
         
         audio_chunks = []
         silence_start = None
         
-        stream = sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="float32")
+        # Use larger buffer (1024 samples) for better performance
+        # This reduces I/O overhead while maintaining low latency
+        buffer_size = 1024
+        stream = sd.InputStream(
+            samplerate=SAMPLE_RATE, 
+            channels=1, 
+            dtype="float32",
+            blocksize=buffer_size
+        )
         stream.start()
         
         try:
             while True:
-                frame, _ = stream.read(512)
+                frame, _ = stream.read(buffer_size)
                 frame = frame.flatten()
                 
                 if frame.size == 0:
@@ -71,17 +84,19 @@ class AudioProcessor:
                 
                 audio_chunks.append(frame)
                 
-                # Check for silence using VAD
-                speech_prob = self.vad_service.detect_speech(frame, threshold)
-                
-                if speech_prob < threshold:
-                    if silence_start is None:
-                        silence_start = time.time()
-                    elif time.time() - silence_start > max_silence:
-                        print("[Audio] ✅ End of speech detected")
-                        break
-                else:
-                    silence_start = None
+                # Check for silence using VAD (only on recent frames for speed)
+                # For long recordings, check every 2nd frame to reduce VAD overhead
+                if len(audio_chunks) % 2 == 0 or len(audio_chunks) < 10:
+                    speech_prob = self.vad_service.detect_speech(frame, threshold)
+                    
+                    if speech_prob < threshold:
+                        if silence_start is None:
+                            silence_start = time.time()
+                        elif time.time() - silence_start > max_silence:
+                            print("[Audio] ✅ End of speech detected")
+                            break
+                    else:
+                        silence_start = None
         
         except KeyboardInterrupt:
             print("\n[Audio] Recording interrupted")

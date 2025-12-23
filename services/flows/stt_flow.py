@@ -59,4 +59,3 @@ class STTFlow:
         print(f"\n[User]: {text}")
         print(f"[Timing] record_time={record_time:.2f}s | transcribe_time={stt_time:.2f}s | total={total:.2f}s")
         return text, stt_time
-

@@ -73,20 +73,20 @@ if TTS_DEVICE_ENV not in valid_devices:
     print(f"[WARN] Invalid TTS_DEVICE={TTS_DEVICE_ENV}, defaulting to 'cuda'")
     TTS_DEVICE_ENV = "cuda"
 if WHISPER_DEVICE_ENV not in valid_devices:
-    print(f"[WARN] Invalid WHISPER_DEVICE={WHISPER_DEVICE_ENV}, defaulting to 'cpu'")
-    WHISPER_DEVICE_ENV = "cpu"
+    print(f"[WARN] Invalid WHISPER_DEVICE={WHISPER_DEVICE_ENV}, defaulting to 'cuda'")
+    WHISPER_DEVICE_ENV = "cuda"
 
 # Check CUDA availability if any device requires it
-requires_cuda = LLM_DEVICE_ENV == "cuda" or TTS_DEVICE_ENV == "cuda"
+requires_cuda = LLM_DEVICE_ENV == "cuda" or TTS_DEVICE_ENV == "cuda" or WHISPER_DEVICE_ENV == "cuda"
 if requires_cuda and not torch.cuda.is_available():
     raise SystemExit(
         "[ERROR] CUDA is not available but required by device configuration.\n"
-        f"LLM_DEVICE={LLM_DEVICE_ENV}, TTS_DEVICE={TTS_DEVICE_ENV}\n"
+        f"LLM_DEVICE={LLM_DEVICE_ENV}, TTS_DEVICE={TTS_DEVICE_ENV}, WHISPER_DEVICE={WHISPER_DEVICE_ENV}\n"
         "Please ensure:\n"
         "  1. NVIDIA GPU is installed and drivers are up to date\n"
         "  2. CUDA toolkit is installed\n"
         "  3. PyTorch with CUDA support is installed\n"
-        "  4. Or set LLM_DEVICE=cpu and TTS_DEVICE=cpu in .env file\n"
+        "  4. Or set LLM_DEVICE=cpu, TTS_DEVICE=cpu, and WHISPER_DEVICE=cpu in .env file\n"
         "  5. Restart the application"
     )
 
@@ -118,27 +118,33 @@ VOICE_CLONE_WAV = os.getenv("VOICE_CLONE_WAV", "data/saved_voices/refe2.wav")
 # ========== RUNTIME MODEL CONFIGURATION ==========
 # Model names can be overridden via environment variables
 
-# Default model: Use "large-v3" 
-# Can be overridden via WHISPER_MODEL environment variable
+# ULTRA-LOW LATENCY MULTILINGUAL MODELS (English, Hindi, Gujarati):
 # 
-# For ULTRA-LOW LATENCY, use smaller models:
-# - "tiny" or "tiny.en" - Fastest (~50-100ms), lower accuracy
-# - "base" or "base.en" - Fast (~100-200ms), good balance
-# - "small" or "small.en" - Moderate (~200-400ms), better accuracy
-# - "medium" or "medium.en" - Slower (~400-800ms), high accuracy
-# - "large-v3" - Slowest (~800-2000ms), highest accuracy
+# For ULTRA-LOW LATENCY with multilingual support, use:
+# - "large-v3-turbo" - Fastest large model (~200-400ms), supports 99+ languages
+# - "distil-whisper/distil-large-v3" - ~2x faster than large-v3 (~300-600ms), multilingual
+# - "distil-whisper/distil-medium.en" - Very fast (~100-200ms), English only
+# - "distil-whisper/distil-small.en" - Fastest (~50-150ms), English only
 #
-# Recommended for ultra-low latency: "base.en" or "small.en"
+# NOTE: Models with ".en" suffix are ENGLISH-ONLY and won't support Hindi/Gujarati
+# For multilingual support (en/hi/gu), use models WITHOUT ".en" suffix
+#
+# Performance comparison (on RTX GPU with int8_float16):
+# - "large-v3-turbo": ~200-400ms, excellent accuracy, multilingual ✅ RECOMMENDED
+# - "distil-whisper/distil-large-v3": ~300-600ms, excellent accuracy, multilingual ✅ RECOMMENDED
+# - "large-v3": ~800-2000ms, highest accuracy, multilingual (slower)
+# - "base.en": ~100-200ms, good accuracy, English only ❌ (no Hindi/Gujarati)
+# - "small.en": ~200-400ms, better accuracy, English only ❌ (no Hindi/Gujarati)
 if WHISPER_DEVICE == "cuda":
-    # GPU: default to "large-v3" for accuracy
-    # For ultra-low latency, set WHISPER_MODEL="base.en" or "small.en" in .env
-    # GPU: default to "distil-whisper/distil-large-v3" (faster inference)
-    # WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3")
-    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
+    # GPU: Use "large-v3-turbo" or "distil-whisper/distil-large-v3" for ultra-low latency + multilingual
+    # Both support English, Hindi, Gujarati and many other languages
+    # Can be overridden via WHISPER_MODEL environment variable
+    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "large-v3-turbo")
 else:
-    # CPU: use smaller model for better performance
-    # For ultra-low latency, use "tiny.en" or "base.en"
-    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "medium.en")
+    # CPU: use smaller multilingual model for better performance
+    # For ultra-low latency on CPU, use "base" (multilingual) or "small" (multilingual)
+    # Avoid ".en" models if you need Hindi/Gujarati support
+    WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 LLM_MODEL = os.getenv("LLM_MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
 XTTS_MODEL = os.getenv("XTTS_MODEL", "tts_models/multilingual/multi-dataset/xtts_v2")
 
@@ -161,6 +167,22 @@ else:
         WHISPER_COMPUTE_TYPE = "int8"
     else:
         WHISPER_COMPUTE_TYPE = env_compute_type if env_compute_type else "int8"
+
+# ========== RUNTIME LANGUAGE CONFIGURATION ==========
+# Language for speech transcription (supports: en, hi, gu, and 99+ languages)
+# 
+# AUTO-DETECTION (default): Leave empty or unset to auto-detect language
+# Set to specific language code to force: "en", "hi", "gu", etc.
+# 
+# Supported languages: English (en), Hindi (hi), Gujarati (gu), and many more
+env_lang = os.getenv("WHISPER_LANGUAGE", "").strip()
+WHISPER_LANGUAGE = env_lang if env_lang else None  # None = auto-detect (default)
+
+# Print language configuration
+if WHISPER_LANGUAGE:
+    print(f"[INFO] Whisper language: FORCED to '{WHISPER_LANGUAGE}'")
+else:
+    print(f"[INFO] Whisper language: AUTO-DETECT (supports en, hi, gu, and 99+ languages)")
 
 # ========== RUNTIME VAD CONFIGURATION ==========
 # Can be adjusted at runtime
@@ -220,12 +242,13 @@ class ConfigService:
         Get model configuration
         
         Returns:
-            Dictionary with model names and compute types
+            Dictionary with model names, compute types, and language settings
         """
         return {
             "whisper_model": WHISPER_MODEL,
             "whisper_device": WHISPER_DEVICE,
             "whisper_compute_type": WHISPER_COMPUTE_TYPE,
+            "whisper_language": WHISPER_LANGUAGE or "auto-detect",
             "llm_model": LLM_MODEL,
             "tts_model": XTTS_MODEL,
             "stt_engine": DEFAULT_STT_ENGINE,
@@ -260,4 +283,3 @@ class ConfigService:
             "models": ConfigService.get_model_config(),
             "vad": ConfigService.get_vad_config(),
         }
-
