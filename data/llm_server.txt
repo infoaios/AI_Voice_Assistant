@@ -1,0 +1,12 @@
+ws://5.101.168.158:8765
+
+{
+    "token": "7c91e4f2b5a6c8d19e0f3a4b2c1d5e6f8a9b0c2d3e4f5a6b7c8d9e0f1a2b3c4d",
+    "model_id": "llama",
+    "prompt": "hii."
+}
+
+model_id == "whisper"
+model_id == "llama"
+model_id == "xtts"
+
