@@ -1,0 +1,60 @@
+[User]: Okay, can you add one cold coffee?
+[Timing] record_time=4.65s | transcribe_time=1.12s | total=5.76s
+[AI]: Great! I've added 1 Cold Coffee. Your current order: 1 Cold Coffee (150 rupees). Total: 150 rupees.
+[TTS] Total generation time: 5.80s for 4 chunks
+
+[Latency Summary]
+  STT: 1.12s | Brain: 0.00s (JSON=True, LLM=0.00s) | TTS: 5.80s
+  TOTAL: 6.92s
+
+
+websocket :
+🎤 Listening... (Speak now)
+📝 You said:  Hello, can you add one cold coffee?
+🤖 Assistant: Great! I've added 1 Cold Coffee. Your current order: 1 Cold Coffee (150 rupees). Total: 150 rupees.
+[Latency Summary Prompt ID: 1003]
+  STT: 1.55s | Brain: 0.00s (JSON=1.0, LLM=0.00s) | TTS: 1.82s
+  TOTAL: 3.38s
+
+In detail:   
+==================================================
+2025-12-26 17:51:56,258 - __main__ - INFO - 🎤 SPEECH-TO-TEXT
+2025-12-26 17:51:56,259 - __main__ - INFO - ==================================================
+2025-12-26 17:51:56,259 - __main__ - INFO - 📝 You said:  Hello, can you add one cold coffee?
+2025-12-26 17:51:56,259 - __main__ - INFO - 🆔 Prompt ID: 1005
+2025-12-26 17:51:56,259 - __main__ - INFO - ⏱️  STT Time: 1.639s
+2025-12-26 17:51:56,259 - __main__ - INFO - ==================================================
+2025-12-26 17:51:56,263 - __main__ - INFO -
+🤖 Assistant (JSON RAG): Great! I've added 1 Cold Coffee. Your current order: 1 Cold Coffee (150 rupees). Total: 150 rupees.   
+2025-12-26 17:51:58,011 - __main__ - INFO - 
+==================================================
+2025-12-26 17:51:58,011 - __main__ - INFO - 🔊 TEXT-TO-SPEECH
+2025-12-26 17:51:58,012 - __main__ - INFO - ==================================================
+2025-12-26 17:51:58,012 - __main__ - INFO - ✅ Audio generated: 426,028 bytes
+2025-12-26 17:51:58,012 - __main__ - INFO - 🆔 Prompt ID: 1005
+2025-12-26 17:51:58,012 - __main__ - INFO - ⏱️  TTS Time: 1.746s
+2025-12-26 17:51:58,012 - __main__ - INFO - ==================================================
+2025-12-26 17:52:07,776 - __main__ - INFO - ▶️  Audio playback complete
+2025-12-26 17:52:07,776 - __main__ - INFO - 
+============================================================
+2025-12-26 17:52:07,777 - __main__ - INFO - ⏱️  TIMING SUMMARY
+2025-12-26 17:52:07,777 - __main__ - INFO - ============================================================
+2025-12-26 17:52:07,777 - __main__ - INFO - 📊 Session: 6
+2025-12-26 17:52:07,778 - __main__ - INFO - 🆔 Prompt ID: 1005
+2025-12-26 17:52:07,778 - __main__ - INFO - ✅ Status: SUCCESS
+2025-12-26 17:52:07,779 - __main__ - INFO - ------------------------------------------------------------
+2025-12-26 17:52:07,780 - __main__ - INFO - 🎤 STT Time:      1.639s
+2025-12-26 17:52:07,780 - __main__ - INFO - 🤖 TTT Total:     0.003s
+2025-12-26 17:52:07,781 - __main__ - INFO -    ├─ RAG:        0.003s (100.0% of TTT)
+2025-12-26 17:52:07,781 - __main__ - INFO - 🔊 TTS Time:      1.746s
+2025-12-26 17:52:07,781 - __main__ - INFO - ------------------------------------------------------------
+2025-12-26 17:52:07,781 - __main__ - INFO - 📝 CALCULATION:
+2025-12-26 17:52:07,782 - __main__ - INFO -    STT (1.639s) + TTT (0.003s) + TTS (1.746s)
+2025-12-26 17:52:07,782 - __main__ - INFO -    = 1.639s + 0.003s + 1.746s
+2025-12-26 17:52:07,783 - __main__ - INFO -    = 3.388s
+2025-12-26 17:52:07,784 - __main__ - INFO - ------------------------------------------------------------
+2025-12-26 17:52:07,784 - __main__ - INFO - 📊 PERCENTAGES:
+2025-12-26 17:52:07,784 - __main__ - INFO -    STT:   1.639s ( 48.4%)
+2025-12-26 17:52:07,785 - __main__ - INFO -    TTT:   0.003s (  0.1%)
+2025-12-26 17:52:07,785 - __main__ - INFO -    TTS:   1.746s ( 51.5%)
+2025-12-26 17:52:07,785 - __main__ - INFO - ============================================================
