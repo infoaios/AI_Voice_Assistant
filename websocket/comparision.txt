@@ -1,3 +1,4 @@
+Old AI voice assistent script :
 [User]: Okay, can you add one cold coffee?
 [Timing] record_time=4.65s | transcribe_time=1.12s | total=5.76s
 [AI]: Great! I've added 1 Cold Coffee. Your current order: 1 Cold Coffee (150 rupees). Total: 150 rupees.
@@ -7,8 +8,18 @@
   STT: 1.12s | Brain: 0.00s (JSON=True, LLM=0.00s) | TTS: 5.80s
   TOTAL: 6.92s
 
+websocket xtts v2 + voice cloning :
+🎤 Listening... (Speak now)
+📝 You said:  Thank you.
+🤖 Assistant: Welcome to Infocall Dine! We are located at MG Road, Mumbai, Maharashtra 400001. You're welcome.
+🎤 Voice cloning enabled (original)
+[Latency Summary Prompt ID: 1001]
+  Intent: thanks | Used LLM: False
+  STT: 1.81s | Brain: 0.00s (JSON=0.00s, LLM=0.00s) | TTS: 3.94s
+  TOTAL: 5.76s
 
-websocket :
+
+websocket Tacotron2 (SpeechBrain):
 🎤 Listening... (Speak now)
 📝 You said:  Hello, can you add one cold coffee?
 🤖 Assistant: Great! I've added 1 Cold Coffee. Your current order: 1 Cold Coffee (150 rupees). Total: 150 rupees.
