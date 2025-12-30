@@ -8,6 +8,28 @@ Old AI voice assistent script :
   STT: 1.12s | Brain: 0.00s (JSON=True, LLM=0.00s) | TTS: 5.80s
   TOTAL: 6.92s
 
+websocket xtts v2 + voice cloning english + improve latency 
+ 🎤 Listening... (Speak now)
+📝 You said:  Can you give me the order summary?
+🤖 Assistant: Your current order: 1 Masala Chai (30 rupees); 1 Cold Coffee (150 rupees). Total: 180 rupees.
+🎤 TTS Input (cleaned): Your current order 1 Masala Chai 30 rupees 1 Cold Coffee 150 rupees . Total 180 rupees.
+🎤 Voice cloning enabled (original)
+[Latency Summary Prompt ID: 1050]
+  Intent: order_summary | Used LLM: False
+  STT: 0.47s | Brain: 0.00s (JSON=0.00s, LLM=0.00s) | TTS: 2.67s
+  TOTAL: 3.15s
+  
+🎤 Listening... (Speak now)
+📝 You said:  I want to add one masala chai.
+🤖 Assistant: Do you want to add 1 Masala Chai for 30 rupees to your order?
+🎤 TTS Input (cleaned): Do you want to add 1 Masala Chai for 30 rupees to your order?
+🎤 Voice cloning enabled (original)
+[Latency Summary Prompt ID: 1055]
+  Intent: order_add | Used LLM: False
+  STT: 0.54s | Brain: 0.00s (JSON=0.00s, LLM=0.00s) | TTS: 1.36s
+  TOTAL: 1.90s
+
+
 websocket xtts v2 + voice cloning :
 🎤 Listening... (Speak now)
 📝 You said:  Thank you.
