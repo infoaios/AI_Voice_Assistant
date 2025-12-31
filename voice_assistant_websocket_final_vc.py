@@ -57,6 +57,7 @@ def trim_to_5_seconds(input_path, output_path):
             '-y',  # Overwrite output file without asking
             '-i', input_path,
             '-t', '5',  # Take only first 5 seconds
+            '-filter:a', 'atempo=1.5',  # Speed up by 1.5x
             '-ar', '16000',  # Sample rate 16000 Hz
             '-ac', '1',  # Mono channel
             '-acodec', 'pcm_s16le',  # Audio codec
@@ -64,7 +65,7 @@ def trim_to_5_seconds(input_path, output_path):
             output_path
         ]
         
-        print(f"  ↳ Trimming voice reference to 5 seconds...")
+        print(f"  ↳ Trimming voice reference to 5 seconds with 1.5x speed......")
         
         # Run the command
         result = subprocess.run(cmd, capture_output=True, text=True)
@@ -709,7 +710,7 @@ def extract_quantity(text: str, default: int = 1) -> int:
     
     return default
 
-def menu_suggestion_string(limit_per_category: Optional[int] = None) -> str:
+# def menu_suggestion_string(limit_per_category: Optional[int] = None) -> str:
     """Build menu suggestion string"""
     parts = []
     for c in REST_DATA.get("menu", []):
@@ -720,6 +721,26 @@ def menu_suggestion_string(limit_per_category: Optional[int] = None) -> str:
         if names:
             parts.append(f"{c['name']}: {names}")
     return " | ".join(parts) if parts else "our current menu items."
+
+def menu_suggestion_string(show_items: bool = False, limit_per_category: Optional[int] = None) -> str:
+    """Build menu suggestion string - optionally with or without items"""
+    parts = []
+    for c in REST_DATA.get("menu", []):
+        if show_items:
+            items_list = c.get("items", [])
+            if limit_per_category is not None:
+                items_list = items_list[:limit_per_category]
+            names = ", ".join(i["name"] for i in items_list)
+            if names:
+                parts.append(f"{c['name']}: {names}")
+        else:
+            # Just show category names
+            parts.append(f"{c['name']}")
+    
+    if show_items:
+        return " | ".join(parts) if parts else "our current menu items."
+    else:
+        return ", ".join(parts) if parts else "our menu categories."
 
 def apply_phonetic_corrections(text: str) -> str:
     """Fix common speech-to-text errors for Indian food terms"""
@@ -1745,6 +1766,16 @@ class ResponseTemplates:
             return f"Do you want to remove {qty} {item_name} from your order?"
         return f"Do you want to remove {item_name} from your order?"
 
+    @staticmethod
+    def menu_categories(categories_str: str) -> str:
+        """Template for menu categories only"""
+        return f"We have these categories: {categories_str}. What would you like to know more about?"
+    
+    @staticmethod
+    def menu_items(menu_str: str) -> str:
+        """Template for menu items"""
+        return f"Here are some items from our menu: {menu_str}"
+    
 # ========== RESTAURANT JSON RAG SYSTEM WITH INTENT ROUTER ==========
 class RestaurantRAGSystem:
     """Restaurant JSON-based RAG System with Intent Router - FIXED VERSION"""
@@ -2069,8 +2100,16 @@ class RestaurantRAGSystem:
                     names = ", ".join(i["name"] for i in cat["items"])
                     return f"{cat['name']}: {names}", False
             
-            suggestions = menu_suggestion_string(limit_per_category=2)
-            return "Here's our menu: " + suggestions, False
+            # suggestions = menu_suggestion_string(limit_per_category=2)
+            # return "Here's our menu: " + suggestions, False
+            # Check if user wants to see items (asked "what items" or "what dishes")
+            if any(word in text_corrected for word in ["items", "dishes", "foods", "options", "list"]):
+                suggestions = menu_suggestion_string(show_items=True, limit_per_category=2)
+                return "Here are some items from our menu: " + suggestions, False
+            else:
+                # Default: Just show categories
+                categories = menu_suggestion_string(show_items=False)
+                return f"We have these categories: {categories}. What would you like to know more about?", False
         
         # 11. INFO - DESCRIPTION
         if intent_result.intent == Intent.INFO_DESCRIPTION:
@@ -2503,7 +2542,8 @@ class RestaurantVoiceAssistant:
             addr = rest.get("address", "our location")
             # Don't add greeting if it's already a greeting response
             if not reply.startswith("Hello") and not reply.startswith("Welcome"):
-                reply = f"Welcome to {name}! We are located at {addr}. {reply}"
+                reply = f"Welcome to {name}!"
+                # reply = f"Welcome to {name}! We are located at {addr}. {reply}"
             self.first_interaction = False
         
         # Print assistant response

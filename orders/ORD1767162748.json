@@ -1,0 +1,19 @@
+{
+  "order_id": "ORD1767162748",
+  "timestamp": "2025-12-31 12:02:28",
+  "items": [
+    {
+      "name": "Garlic Naan",
+      "qty": 1,
+      "unit_price": 60.0
+    },
+    {
+      "name": "Cold Coffee",
+      "qty": 1,
+      "unit_price": 150.0
+    }
+  ],
+  "subtotal": 210.0,
+  "total": 210.0,
+  "customer": {}
+}

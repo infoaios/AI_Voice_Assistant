@@ -1,8 +1,22 @@
 import datetime
-import json
-import time
-from pathlib import Path
+import re
 from typing import Optional, Tuple
+
+from core.order_manager import EnhancedOrderManager
+from core.intent_router import Intent, IntentRouter
+from core.response_templates import ResponseTemplates
+from core.restaurant_data import REST_DATA
+from core.nlp_utils import (
+    apply_phonetic_corrections,
+    detect_multiple_dishes,
+    extract_quantity,
+    find_all_dish_matches,
+    menu_suggestion_string,
+    normalize,
+    edit_dist,
+    similarity,
+    all_menu_items
+)
 
 class RestaurantRAGSystem:
     """Restaurant JSON-based RAG System with Intent Router - FIXED VERSION"""
@@ -327,8 +341,16 @@ class RestaurantRAGSystem:
                     names = ", ".join(i["name"] for i in cat["items"])
                     return f"{cat['name']}: {names}", False
             
-            suggestions = menu_suggestion_string(limit_per_category=2)
-            return "Here's our menu: " + suggestions, False
+            # suggestions = menu_suggestion_string(limit_per_category=2)
+            # return "Here's our menu: " + suggestions, False
+            # Check if user wants to see items (asked "what items" or "what dishes")
+            if any(word in text_corrected for word in ["items", "dishes", "foods", "options", "list"]):
+                suggestions = menu_suggestion_string(show_items=True, limit_per_category=2)
+                return "Here are some items from our menu: " + suggestions, False
+            else:
+                # Default: Just show categories
+                categories = menu_suggestion_string(show_items=False)
+                return f"We have these categories: {categories}. What would you like to know more about?", False
         
         # 11. INFO - DESCRIPTION
         if intent_result.intent == Intent.INFO_DESCRIPTION:
@@ -496,4 +518,5 @@ class RestaurantRAGSystem:
         
         # Default fallback
         return self.templates.clarification_needed(), False
+
 
