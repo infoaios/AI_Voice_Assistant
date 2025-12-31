@@ -1,26 +1,28 @@
 project_root/
-  main_websocket.py
-  .env
-  core/
-    __init__.py
-    order_manager.py
-    restaurant_rag.py
-    intent_router.py
-    response_templates.py
-    restaurant_data.py
-    nlp_utils.py
+├── main_websocket.py        # Application entry point (voice loop orchestration)
+├── .env                     # Environment variables
 
-  utility\
-	voice_reference_utils.py
+├── core/                    # Core domain & deterministic logic
+│   ├── __init__.py
+│   ├── order_manager.py     # Order state, add/remove/update/finalize
+│   ├── restaurant_rag.py    # RAG + intent handling (authoritative brain)
+│   ├── intent_router.py     # Intent classification & confidence scoring
+│   ├── response_templates.py# Fixed responses (no LLM)
+│   ├── restaurant_data.py   # Menu & restaurant metadata loader
+│   └── nlp_utils.py         # Pure text utilities (NO IO, NO audio)
 
-  websocket/
-    __init__.py
-    stt/
-      __init__.py
-      stt_websocket.py
-    tts/
-      __init__.py
-      tts_websocket.py
-    ttt/
-      __init__.py
-      llm_websocket.py
+├── utility/                 # Shared helpers (non-business)
+│   └── voice_reference_utils.py
+│       └── Audio trimming & preprocessing for voice cloning
+
+├── websocket/               # Network / inference layer (stateless)
+│   ├── __init__.py
+│   ├── stt/
+│   │   ├── __init__.py
+│   │   └── stt_websocket.py # Whisper STT (audio → text)
+│   ├── tts/
+│   │   ├── __init__.py
+│   │   └── tts_websocket.py # XTTS v2 (text → audio)
+│   └── ttt/
+│       ├── __init__.py
+│       └── llm_websocket.py # TinyLlama / LLM (text → text)
