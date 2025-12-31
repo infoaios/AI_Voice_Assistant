@@ -1,7 +1,6 @@
 import datetime
 import re
-from typing import Optional, Tuple
-
+from typing import Optional, Tuple, Dict, Any, List
 from core.order_manager import EnhancedOrderManager
 from core.intent_router import Intent, IntentRouter
 from core.response_templates import ResponseTemplates
@@ -12,10 +11,8 @@ from core.nlp_utils import (
     extract_quantity,
     find_all_dish_matches,
     menu_suggestion_string,
-    normalize,
-    edit_dist,
-    similarity,
-    all_menu_items
+    all_menu_items,
+    similarity
 )
 
 class RestaurantRAGSystem:
@@ -334,23 +331,51 @@ class RestaurantRAGSystem:
         
         # 10. INFO - MENU
         if intent_result.intent == Intent.INFO_MENU:
-            # Check for category-specific
+            # Check for category-specific queries first
             for cat in REST_DATA["menu"]:
                 cat_name = cat["name"].lower()
-                if cat_name in text_corrected:
+                # Check for patterns like "main course menu", "beverage menu", etc.
+                category_patterns = [
+                    f"{cat_name} menu",
+                    f"{cat_name} items", 
+                    f"items in {cat_name}",
+                    f"dishes in {cat_name}",
+                    f"{cat_name} dishes",
+                    f"what's in {cat_name}",
+                    f"what is in {cat_name}",
+                    f"show me {cat_name}",
+                    f"tell me about {cat_name}"
+                ]
+                
+                if any(pattern in text_corrected for pattern in category_patterns):
                     names = ", ".join(i["name"] for i in cat["items"])
-                    return f"{cat['name']}: {names}", False
+                    if len(cat["items"]) <= 5:
+                        return f"{cat['name']} includes: {names}.", False
+                    else:
+                        # If many items, list first 3-4
+                        first_items = ", ".join([i["name"] for i in cat["items"][:4]])
+                        return f"{cat['name']} includes items like: {first_items}, and more.", False
             
-            # suggestions = menu_suggestion_string(limit_per_category=2)
-            # return "Here's our menu: " + suggestions, False
-            # Check if user wants to see items (asked "what items" or "what dishes")
-            if any(word in text_corrected for word in ["items", "dishes", "foods", "options", "list"]):
+            # Check if user specifically asks for ITEMS (not just categories)
+            items_keywords = ["items", "dishes", "foods", "list of items", "show me items", "what items"]
+            if any(word in text_corrected for word in items_keywords):
                 suggestions = menu_suggestion_string(show_items=True, limit_per_category=2)
                 return "Here are some items from our menu: " + suggestions, False
-            else:
-                # Default: Just show categories
+            
+            # Check if user specifically asks for "today's menu" or "menu today"
+            today_keywords = ["today menu", "todays menu", "menu today", "today's menu"]
+            if any(word in text_corrected for word in today_keywords):
                 categories = menu_suggestion_string(show_items=False)
-                return f"We have these categories: {categories}. What would you like to know more about?", False
+                return f"Our menu today includes: {categories}. What would you like to know more about?", False
+            
+            # Check if user wants detailed items (asked "show me" or "what do you have")
+            if any(word in text_corrected for word in ["show me", "what do you have", "what's available", "what can i get"]):
+                suggestions = menu_suggestion_string(show_items=True, limit_per_category=2)
+                return "Here are some items from our menu: " + suggestions, False
+            
+            # DEFAULT: Show only categories (not items)
+            categories = menu_suggestion_string(show_items=False)
+            return f"Our menu includes: {categories}. What would you like to know more about?", False
         
         # 11. INFO - DESCRIPTION
         if intent_result.intent == Intent.INFO_DESCRIPTION:
@@ -451,7 +476,35 @@ class RestaurantRAGSystem:
             if any(k in text_corrected for k in ["phone", "contact", "number"]):
                 return f"You can reach us at {rest.get('phone', '+91 98765 43210')}.", False
         
-        # 16. Handle quantity-only phrases like "Cold coffee 2, 3"
+        # 16. INFO - CATEGORY SPECIFIC ITEMS (what's in main course?)
+        if intent_result.intent == Intent.INFO_CATEGORY_ITEMS:
+            category_name = intent_result.slots.get("category", "")
+            
+            # Find the category
+            found_category = None
+            for cat in REST_DATA.get("menu", []):
+                if cat["name"].lower() == category_name.lower():
+                    found_category = cat
+                    break
+            
+            if found_category:
+                items = found_category.get("items", [])
+                if items:
+                    item_names = ", ".join([item["name"] for item in items])
+                    if len(items) <= 5:
+                        return f"{found_category['name']} includes: {item_names}.", False
+                    else:
+                        # If many items, list first 3-4
+                        first_items = ", ".join([item["name"] for item in items[:4]])
+                        return f"{found_category['name']} includes items like: {first_items}, and more.", False
+                else:
+                    return f"{found_category['name']} doesn't have any items listed.", False
+            else:
+                # Fall back to showing all categories
+                categories = menu_suggestion_string(show_items=False)
+                return f"We have these categories: {categories}. Which category would you like to know about?", False
+            
+        # 17. Handle quantity-only phrases like "Cold coffee 2, 3"
         # Check if this looks like a quantity update for an existing item
         if len(text_corrected.split()) <= 3 and any(char.isdigit() for char in text_corrected):
             # Check if it mentions any menu items
@@ -480,18 +533,18 @@ class RestaurantRAGSystem:
                         }
                         return self.templates.confirmation_required(item["name"], qty, item["price"]), False
         
-        # 17. Handle "I want to add more" without specifying item
+        # 18. Handle "I want to add more" without specifying item
         if text_corrected in ["i want to add more", "add more", "more"]:
             if self.order.is_empty():
                 return "Your order is empty. What would you like to add?", False
             else:
                 return "What item would you like to add more of?", False
         
-        # 18. Handle goodbye/exit
+        # 19. Handle goodbye/exit
         if any(word in text_corrected for word in ["bye", "goodbye", "see you", "farewell", "bye-bye"]):
             return self.templates.goodbye(), False
         
-        # 19. Handle "okay" without context
+        # 20. Handle "okay" without context
         if text_corrected in ["okay", "ok", "okay."]:
             if self.order.pending_confirmation:
                 # Treat as confirmation
@@ -499,24 +552,97 @@ class RestaurantRAGSystem:
             else:
                 return "How can I help you?", False
         
-        # 20. UNKNOWN - Let LLM handle but with strict constraints
+        # 21. UNKNOWN - Let LLM handle but with strict constraints
         if intent_result.intent == Intent.UNKNOWN:
             # Check if it should be blocked from LLM
             food_keywords = [
                 "coffee", "naan", "tikka", "chicken", "paneer", "dal",
                 "tea", "roll", "butter", "garlic", "cold", "masala",
-                "gulab", "jamun", "spring", "biryani"
+                "gulab", "jamun", "spring", "biryani",
+                "menu", "order", "food", "dish", "item", "spicy", 
+                "sweet", "drink", "beverage", "meal", "lunch", "dinner",
+                "breakfast", "snack", "spice", "curry", "rice", "bread",
+                "dessert", "sauce", "gravy", "fried", "grilled", "roasted"
             ]
             
-            if any(keyword in text_corrected for keyword in food_keywords):
-                # This is food-related, don't use LLM
-                return "Could you please clarify what you'd like to order?", False
+            # Convert text to lowercase for case-insensitive matching
+            text_lower = text_corrected.lower()
             
-            if intent_result.confidence < 0.5:
-                # Very low confidence, use LLM for general conversation
-                return None, True
-        
+            # STRICT CHECK: If ANY food-related keyword is found, block LLM completely
+            if any(keyword in text_lower for keyword in food_keywords):
+                # This is food-related, don't use LLM
+                return "I can only help with food items from our current menu. Could you please clarify what specific menu item you'd like to order?", False
+            
+            # Additional safety check - if user mentions ordering/eating but we don't recognize
+            ordering_patterns = [
+                "i want to order", "i'd like to order", "can i get", 
+                "i need", "give me", "i'll have", "i'll take",
+                "can you bring me", "bring me", "serve me"
+            ]
+            
+            if any(pattern in text_lower for pattern in ordering_patterns):
+                return "I can only take orders for items on our current menu. Please check our menu and specify what you'd like to order.", False
+            
+            # Only use LLM for very general, non-food related conversations
+            if intent_result.confidence < 0.3:  # Even stricter confidence threshold
+                # Double-check it's not food-related
+                if not any(food_word in text_lower for food_word in ["eat", "hungry", "thirsty", "restaurant", "cafe"]):
+                    return None, True
+            
+            # Default fallback for UNKNOWN intent
+            return "I'm here to help you with food orders. Could you please specify what you'd like from our menu?", False
+
+        # 22. VEGETARIAN OPTIONS QUERY
+        if intent_result.intent == Intent.VEGETARIAN_OPTIONS:
+            veg_items = []
+            for cat, item in all_menu_items():
+                name_low = item["name"].lower()
+                
+                # Check for vegetarian indicators
+                is_veg = False
+                veg_indicators = ["paneer", "dal", "aloo", "mushroom", "gobi", "sabzi", 
+                                "vegetable", "makhani", "tadka", "palak", "gulab", "jamun",
+                                "veg biryani", "masala", "naan", "roti", "rice", "tea", "coffee"]
+                
+                # Non-veg indicators (to exclude)
+                non_veg_indicators = ["chicken", "mutton", "fish", "prawn", "egg", "meat", "lamb"]
+                
+                # Check name - if contains any veg indicator and NO non-veg indicators
+                if any(indicator in name_low for indicator in veg_indicators):
+                    if not any(non_veg in name_low for non_veg in non_veg_indicators):
+                        is_veg = True
+                
+                # Check description if available
+                desc = item.get("description", "").lower()
+                if ("vegetarian" in desc or "veg" in desc) and not any(non_veg in desc for non_veg in non_veg_indicators):
+                    is_veg = True
+                
+                if is_veg:
+                    veg_items.append(item["name"])
+            
+            if veg_items:
+                # Group by category for better response
+                veg_by_cat = {}
+                for cat, item in all_menu_items():
+                    if item["name"] in veg_items:
+                        cat_name = cat.get("name", "Other")
+                        if cat_name not in veg_by_cat:
+                            veg_by_cat[cat_name] = []
+                        veg_by_cat[cat_name].append(item["name"])
+                
+                response_parts = []
+                for cat_name, items in veg_by_cat.items():
+                    if items:
+                        # Limit to 3 items per category for readability
+                        response_parts.append(f"{cat_name}: {', '.join(items[:3])}")
+                
+                if response_parts:
+                    response = "We have these vegetarian options: " + "; ".join(response_parts)
+                    return response, False
+                else:
+                    return "We have vegetarian dishes like Paneer Tikka, Dal Makhani, Garlic Naan, and Gulab Jamun.", False
+            
+            return "We have vegetarian dishes like Paneer Tikka, Dal Makhani, Garlic Naan, and Gulab Jamun.", False
+                
         # Default fallback
         return self.templates.clarification_needed(), False
-
-

@@ -1,0 +1,19 @@
+{
+  "order_id": "ORD1767186900",
+  "timestamp": "2025-12-31 18:45:00",
+  "items": [
+    {
+      "name": "Paneer Butter Masala",
+      "qty": 1,
+      "unit_price": 320.0
+    },
+    {
+      "name": "Veg Biryani",
+      "qty": 1,
+      "unit_price": 240.0
+    }
+  ],
+  "subtotal": 560.0,
+  "total": 560.0,
+  "customer": {}
+}

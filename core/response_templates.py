@@ -85,4 +85,8 @@ class ResponseTemplates:
     def menu_items(menu_str: str) -> str:
         """Template for menu items"""
         return f"Here are some items from our menu: {menu_str}"
-  
+    
+    @staticmethod
+    def vegetarian_options(veg_items_str: str) -> str:
+        """Template for vegetarian options response"""
+        return f"We have these vegetarian options: {veg_items_str}"

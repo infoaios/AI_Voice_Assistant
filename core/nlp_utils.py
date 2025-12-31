@@ -1,6 +1,5 @@
-
 import re
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 from core.restaurant_data import REST_DATA
 
 def all_menu_items():
@@ -178,18 +177,6 @@ def extract_quantity(text: str, default: int = 1) -> int:
     
     return default
 
-# def menu_suggestion_string(limit_per_category: Optional[int] = None) -> str:
-    """Build menu suggestion string"""
-    parts = []
-    for c in REST_DATA.get("menu", []):
-        items_list = c.get("items", [])
-        if limit_per_category is not None:
-            items_list = items_list[:limit_per_category]
-        names = ", ".join(i["name"] for i in items_list)
-        if names:
-            parts.append(f"{c['name']}: {names}")
-    return " | ".join(parts) if parts else "our current menu items."
-
 def menu_suggestion_string(show_items: bool = False, limit_per_category: Optional[int] = None) -> str:
     """Build menu suggestion string - optionally with or without items"""
     parts = []
@@ -244,6 +231,29 @@ def apply_phonetic_corrections(text: str) -> str:
         "too cold": "two cold",
         "to cold": "two cold",
         "2-pull": "two cold",
+        "wage option": "veg option",
+        "wage options": "veg options",
+        "wage option": "vegetarian option",
+        "wage dish": "veg dish",
+        "wage food": "veg food",
+        "wage items": "veg items",
+        "what's age": "what's veg",
+        "do you have wage": "do you have veg",
+        "any wage": "any veg",
+        "vegetable option": "vegetarian option",
+        "vegetable options": "vegetarian options",
+        "vegetarian option": "vegetarian option",
+        "vegetarian items": "vegetarian items",
+        "main curse": "main course",
+        "be average": "beverage",
+        "be averages": "beverages",
+        "what's in": "what's in",
+        "what is in": "what's in",
+        "what sin": "what's in",
+        "what's the": "what's in the",
+        "whats in": "what's in",
+        "whats the": "what's in the",
+        "whats in the": "what's in the"
     }
     
     text_lower = text.lower()
@@ -287,4 +297,3 @@ def detect_multiple_dishes(text: str) -> List[str]:
             dishes = [match[1].strip() for match in matches]
     
     return dishes if dishes else [text_low]
-

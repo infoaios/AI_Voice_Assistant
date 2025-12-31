@@ -2,8 +2,8 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import Dict, Any
 import re
-from core.nlp_utils import extract_quantity
-from core.nlp_utils import all_menu_items
+from core.nlp_utils import extract_quantity, all_menu_items, similarity
+from core.restaurant_data import REST_DATA
 
 # ========== INTENT CLASSIFICATION ==========
 class Intent(Enum):
@@ -23,6 +23,8 @@ class Intent(Enum):
     ORDER_FINALIZE = "order_finalize"
     ORDER_BILLING = "order_billing"
     RESTAURANT_INFO = "restaurant_info"
+    VEGETARIAN_OPTIONS = "vegetarian_options"  # ADDED
+    INFO_CATEGORY_ITEMS = "info_category_items"  # ADDED
     UNKNOWN = "unknown"
 
 @dataclass
@@ -121,7 +123,21 @@ class IntentRouter:
                     slots={"confirmed": False}
                 )
         
-        # 2. Order finalize (place order)
+        # 2. VEGETARIAN OPTIONS - MUST COME BEFORE MENU AND ORDER ADD
+        veg_keywords = [
+            "vegetarian", "veg option", "veg dish", "veg food", 
+            "vegetable dish", "veg item", "do you have veg", "any veg",
+            "vegetarian option", "vegetarian dish", "veg items",
+            "vegetarian food", "veg food", "any vegetarian"
+        ]
+        if any(kw in text_low for kw in veg_keywords):
+            return IntentResult(
+                intent=Intent.VEGETARIAN_OPTIONS,
+                confidence=0.95,
+                slots={"text": text}
+            )
+        
+        # 3. Order finalize (place order)
         if any(pattern in text_low for pattern in self.finalize_patterns):
             return IntentResult(
                 intent=Intent.ORDER_FINALIZE,
@@ -129,7 +145,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 3. Billing request
+        # 4. Billing request
         if any(pattern in text_low for pattern in self.billing_patterns):
             return IntentResult(
                 intent=Intent.ORDER_BILLING,
@@ -137,7 +153,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 4. Order update (change quantity) - MUST COME BEFORE SUMMARY
+        # 5. Order update (change quantity) - MUST COME BEFORE SUMMARY
         update_keywords = [
             "update", "change", "modify", "make it", "change to",
             "set to", "adjust", "edit", "alter", "only want", "want only",
@@ -150,7 +166,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 5. Order remove - MUST COME BEFORE SUMMARY
+        # 6. Order remove - MUST COME BEFORE SUMMARY
         remove_keywords = [
             "remove", "delete", "cancel", "without", "don't add",
             "take out", "get rid of", "eliminate", "remove from my order",
@@ -163,7 +179,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 6. Small talk - Greeting
+        # 7. Small talk - Greeting
         if any(pattern in text_low for pattern in self.greeting_patterns):
             # Check if it's combined with a request
             if any(p in text_low for p in self.price_patterns + self.add_patterns + self.update_patterns + self.remove_patterns):
@@ -175,7 +191,7 @@ class IntentRouter:
                     slots={}
                 )
         
-        # 7. Small talk - Audibility
+        # 8. Small talk - Audibility
         if any(pattern in text_low for pattern in self.audibility_patterns):
             return IntentResult(
                 intent=Intent.SMALL_TALK_AUDIBILITY,
@@ -183,7 +199,7 @@ class IntentRouter:
                 slots={}
             )
         
-        # 8. Small talk - Thanks
+        # 9. Small talk - Thanks
         if any(pattern in text_low for pattern in self.thanks_patterns):
             # Ensure it's not part of a longer sentence asking for something
             if len(text_low.split()) <= 3:
@@ -193,7 +209,7 @@ class IntentRouter:
                     slots={}
                 )
         
-        # 9. Order summary - MORE SPECIFIC
+        # 10. Order summary - MORE SPECIFIC
         summary_keywords = ["my order", "cart", "summary", "what i have", "what's in my order", 
                           "order summary", "current order", "show order"]
         if any(p in text_low for p in summary_keywords):
@@ -203,7 +219,7 @@ class IntentRouter:
                 slots={}
             )
         
-        # 10. Order clear
+        # 11. Order clear
         if any(p in text_low for p in ["clear order", "reset order", "cancel all", "start over", "empty order"]):
             return IntentResult(
                 intent=Intent.ORDER_CLEAR,
@@ -211,7 +227,7 @@ class IntentRouter:
                 slots={}
             )
         
-        # 11. Info - Price (HIGH PRIORITY)
+        # 12. Info - Price (HIGH PRIORITY)
         if any(pattern in text_low for pattern in self.price_patterns):
             return IntentResult(
                 intent=Intent.INFO_PRICE,
@@ -219,7 +235,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 12. Info - Menu
+        # 13. Info - Menu
         if any(pattern in text_low for pattern in self.menu_patterns):
             return IntentResult(
                 intent=Intent.INFO_MENU,
@@ -227,15 +243,47 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 13. Info - Description
-        if any(k in text_low for k in ["what is", "tell me about", "describe", "what's in", "what does"]):
-            return IntentResult(
-                intent=Intent.INFO_DESCRIPTION,
-                confidence=0.9,
-                slots={"text": text}
-            )
+        # 14. Check for "what's in [category]" queries - MUST COME BEFORE INFO_DESCRIPTION
+        whats_in_patterns = [
+            r"what['\s]*s\s+in\s+([a-z\s]+)(?:\?|$)",
+            r"what\s+is\s+in\s+([a-z\s]+)(?:\?|$)",
+            r"what\s+does\s+([a-z\s]+)\s+have(?:\?|$)",
+            r"what\s+are\s+the\s+items\s+in\s+([a-z\s]+)(?:\?|$)",
+            r"show\s+me\s+([a-z\s]+)\s+items(?:\?|$)",
+            r"items\s+in\s+([a-z\s]+)(?:\?|$)",
+            r"dishes\s+in\s+([a-z\s]+)(?:\?|$)"
+        ]
         
-        # 14. Order - Add (requires quantity extraction) - IMPROVED
+        for pattern in whats_in_patterns:
+            match = re.search(pattern, text_low)
+            if match:
+                category_name = match.group(1).strip()
+                # Check if it matches any category in the menu
+                for cat in REST_DATA.get("menu", []):
+                    cat_low = cat["name"].lower()
+                    # Check for direct match or similarity
+                    if (category_name in cat_low or 
+                        cat_low in category_name or 
+                        similarity(category_name, cat_low) > 0.7 or
+                        any(word in cat_low for word in category_name.split())):
+                        return IntentResult(
+                            intent=Intent.INFO_CATEGORY_ITEMS,
+                            confidence=0.9,
+                            slots={"category": cat["name"], "text": text}
+                        )
+        
+        # 15. Info - Description (for individual dishes)
+        if any(k in text_low for k in ["what is", "tell me about", "describe", "what's", "what does"]):
+            # But make sure it's not asking about a category
+            category_words = ["course", "menu", "category", "section", "beverage", "drink", "starter", "dessert"]
+            if not any(word in text_low for word in category_words):
+                return IntentResult(
+                    intent=Intent.INFO_DESCRIPTION,
+                    confidence=0.9,
+                    slots={"text": text}
+                )
+        
+        # 16. Order - Add (requires quantity extraction) - IMPROVED
         add_keywords = self.add_patterns + ["add", "want", "need", "like", "get", "give", "order", 
                                           "another", "more", "additional", "extra"]
         
@@ -260,7 +308,7 @@ class IntentRouter:
                 requires_confirmation=True
             )
         
-        # 15. Restaurant info
+        # 17. Restaurant info
         if any(k in text_low for k in ["address", "location", "phone", "contact", "restaurant name", "your name"]):
             return IntentResult(
                 intent=Intent.RESTAURANT_INFO,
@@ -268,7 +316,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 16. Check for dish names with quantities (e.g., "cold coffee 2")
+        # 18. Check for dish names with quantities (e.g., "cold coffee 2")
         # This catches patterns that weren't caught by the regex above
         for cat, item in all_menu_items():
             item_low = item["name"].lower()
@@ -283,7 +331,7 @@ class IntentRouter:
                         requires_confirmation=True
                     )
         
-        # 17. Single word dish names (short queries)
+        # 19. Single word dish names (short queries)
         words = text_low.split()
         if len(words) <= 3 and not any(p in text_low for p in ["hello", "hi", "thanks", "thank", "okay", "yes", "no"]):
             # Could be asking about a dish
@@ -293,7 +341,7 @@ class IntentRouter:
                 slots={"text": text}
             )
         
-        # 18. Check for phrases like "I am" or "As I am" which might be misheard confirmations
+        # 20. Check for phrases like "I am" or "As I am" which might be misheard confirmations
         if text_low in ["i am", "as i am", "i am.", "as i am."]:
             return IntentResult(
                 intent=Intent.ORDER_CONFIRM,
@@ -301,7 +349,7 @@ class IntentRouter:
                 slots={"confirmed": True}
             )
         
-        # 19. Check for goodbye phrases
+        # 21. Check for goodbye phrases
         if any(word in text_low for word in ["bye", "goodbye", "see you", "farewell"]):
             return IntentResult(
                 intent=Intent.SMALL_TALK_THANKS,
@@ -315,4 +363,3 @@ class IntentRouter:
             confidence=0.0,
             slots={"text": text}
         )
-
