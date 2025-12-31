@@ -1,3 +1,5 @@
+## 📁 Project Structure
+```
 project_root/
 ├── main_websocket.py        # Application entry point (voice loop orchestration)
 ├── .env                     # Environment variables
@@ -26,3 +28,5 @@ project_root/
 │   └── ttt/
 │       ├── __init__.py
 │       └── llm_websocket.py # TinyLlama / LLM (text → text)
+
+```
